@@ -539,6 +539,30 @@ def nodal_to_elemental_field(
 
 
 
+def elemental_nodal_to_elemental_field(
+    elemental_nodal_field: npt.NDArray,
+    mesh: sn.UnstructuredMesh,
+) -> npt.NDArray:
+    """
+    Reduce an elemental nodal field to a single value per element using
+    mass-matrix-weighted (GLL quadrature) averaging.
+
+    Parameters
+    ----------
+    elemental_nodal_field : (n_elements, n_nodes_per_element)
+        Field values at each GLL node of each element.
+    mesh : sn.UnstructuredMesh
+        The mesh the field lives on (used to obtain the mass matrix).
+
+    Returns
+    -------
+    elemental_field : (n_elements,)
+        Quadrature-weighted average of the field over each element.
+    """
+    mm = mesh.get_mass_matrix()                                  # (nelem, nodes_per_elem)
+    return (mm * elemental_nodal_field).sum(axis=-1) / mm.sum(axis=-1)
+
+
 def elemental_nodal_to_nodal_field(
     elemental_nodal_field: npt.NDArray,
     connectivity: npt.NDArray

@@ -10,29 +10,29 @@ from pathlib import Path
 
 
 
-# Directories in WSL
-PROJECT_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/Project'
-IMAGE_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/image'
-DATA_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/data'
+# # Directories in WSL
+# PROJECT_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/Project'
+# IMAGE_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/image'
+# DATA_DIR = '/home/oliver/workspace/Salvus/elastic_model/anisotropic/data'
 
 
 # Directories in Windows
-PROJECT_DIR_WIN = '/mnt/d/Salvus_project/elastic_model/anisotropic/Project'
-DATA_DIR_WIN = '/mnt/d/Salvus_project/elastic_model/anisotropic/data'
-IMAGE_DIR_WIN = '/mnt/d/Salvus_project/elastic_model/anisotropic/image'
-
+PROJECT_DIR_WIN = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/Project'
+DATA_DIR_WIN = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/data'
+IMAGE_DIR_WIN = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/image'
 
 # create dir if it does not exist
-Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
-Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+# Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
+# Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 Path(IMAGE_DIR_WIN).mkdir(parents=True, exist_ok=True)
 Path(DATA_DIR_WIN).mkdir(parents=True, exist_ok=True)
 
 
 
+# salvus site 
+SITE_NAME = "isambard_oliver"
+RANKS = 4
 
-SITE_NAME = "oliver_wsl"
-RANKS = 8
 
 # 1 MHz should run on laptops, 4 MHz and higher we recommend GPUs
 CENTRAL_FREQUENCY = 1.5e6  # MHz
@@ -245,23 +245,23 @@ p.viz.nb.simulation_setup(
 
 
 
-# # # simulation with volume data (full wavefield)
-# # p.simulations.launch(
-# #     ranks_per_job=RANKS,
-# #     site_name=SITE_NAME,
-# #     events=p.events.list(),
-# #     simulation_configuration="sc_mesh_homogeneous_scatters",
-# #     extra_output_configuration={
-# #         "volume_data": {
-# #             "sampling_interval_in_time_steps": 20,
-# #             "fields": ["phi"],
-# #         },
-# #     },
-# #     # We have previously simulated the same event but without
-# #     # extra output. We have to thus overwrite the existing
-# #     # simulation.
-# #     delete_conflicting_previous_results=True,
-# # )
+# simulation with volume data (full wavefield)
+p.simulations.launch(
+    ranks_per_job=RANKS,
+    site_name=SITE_NAME,
+    events=p.events.list(),
+    simulation_configuration="sc_mesh_homogeneous_scatters",
+    extra_output_configuration={
+        "volume_data": {
+            "sampling_interval_in_time_steps": 20,
+            "fields": ["phi"],
+        },
+    },
+    # We have previously simulated the same event but without
+    # extra output. We have to thus overwrite the existing
+    # simulation.
+    delete_conflicting_previous_results=True,
+)
 
 
 
