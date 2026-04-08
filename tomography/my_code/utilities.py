@@ -604,3 +604,51 @@ def elemental_nodal_to_nodal_field(
     return nodal_sum / nodal_count[:, None] if elemental_nodal_field.ndim > 2 else nodal_sum / nodal_count
 
 
+
+
+def generate_mesh_roi(mesh, bounds):
+    """
+    bounds: list of (min, max) per spatial axis, e.g. [(x0, x1), (y0, y1)]
+    """
+    centroids = mesh.get_element_centroid()
+    roi = np.ones(len(centroids), dtype=bool)
+    for axis, (lo, hi) in enumerate(bounds):
+        roi &= (centroids[:, axis] >= lo) & (centroids[:, axis] <= hi)
+
+    mesh_roi = mesh.copy()
+    for field in list(mesh_roi.elemental_fields):
+        mesh_roi.elemental_fields.pop(field)
+    mesh_roi.attach_field(
+        "region_of_interest",
+        np.broadcast_to(roi[:, None], mesh_roi.connectivity.shape),
+    )
+    return mesh_roi
+
+
+
+def forward_simulation(project, simulation_name, events, 
+                       fields=None, sampling_interval_in_time_steps=10, RANKS=8, SITE_NAME="isambard_oliver", delete_previous=True):
+    if fields:
+        project.simulations.launch(
+            ranks_per_job=RANKS,
+            site_name=SITE_NAME,
+            events=events,
+            simulation_configuration=simulation_name,
+            extra_output_configuration={
+                "volume_data": {
+                    "sampling_interval_in_time_steps": sampling_interval_in_time_steps,
+                    "fields": fields,
+                },
+            },
+            delete_conflicting_previous_results=delete_previous,
+        )
+    else:
+        project.simulations.launch(
+            ranks_per_job=RANKS,
+            site_name=SITE_NAME,
+            events=events,
+            simulation_configuration=simulation_name,
+            delete_conflicting_previous_results=delete_previous,
+        )
+    project.simulations.query(block=True)
+
