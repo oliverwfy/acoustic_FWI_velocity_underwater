@@ -45,7 +45,7 @@ def add_events_to_Project(Project, events):
     return None
 
 def add_inversion(Project, inv_config):
-    Project+= inv_config
+    Project += inv_config
     return None
 
 

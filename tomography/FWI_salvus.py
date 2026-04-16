@@ -64,7 +64,7 @@ for d in [PROJECT_DIR, DATA_DIR, IMAGE_DIR]:
 # Project
 # ============================================================
 
-PROJECT_NAME = 'acoustic_forward_5paris_salvus'
+PROJECT_NAME = 'acoustic_forward_5paris_salvus_2'
 domain = sn.domain.dim2.BoxDomain(x0=x0, x1=x1, y0=y0, y1=y1)
 
 p = sn.Project.from_domain(
@@ -119,7 +119,7 @@ mesh_roi = generate_mesh_roi(mesh_homo, roi)
 # Source–receiver geometry
 # ============================================================
 
-event_5p       = '5_pairs'
+event_5p = '5_pairs'
 amplitude_ratio = 1e3
 
 s_loc = (0.5, 0.3)                                      # single source
@@ -146,7 +146,7 @@ p.add_to_project(
 
 end_time               = 2e-4   # [s]
 start_time             = 0.0    # [s]
-sampling_rate_in_hertz = f_c * 100
+sampling_rate_in_hertz = f_c * 200
 time_shift_in_seconds  = 1.0 / f_c
 
 wavelet = sn.simple_config.stf.Ricker(
@@ -232,7 +232,7 @@ invconfig = sn.InverseProblemConfiguration(
     events=event_5p,
     misfit_configuration=misfit_name,
     mapping=sn.Mapping(
-        scaling="relative_deviation_from_prior",
+        scaling="absolute",
         inversion_parameters=["VP"],
         region_of_interest=mesh_roi,
     ),
