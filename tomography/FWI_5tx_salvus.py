@@ -36,6 +36,7 @@ from my_code.utilities import *
 # ============================================================
 # Configuration
 # ============================================================
+tx = 2
 
 SITE_NAME = "isambard_oliver"
 RANKS     = 8
@@ -59,7 +60,7 @@ for d in [PROJECT_DIR, DATA_DIR, IMAGE_DIR]:
 # Project
 # ============================================================
 
-PROJECT_NAME = 'acoustic_forward_5paris_5tx_salvus'
+PROJECT_NAME = 'acoustic_forward_5paris_' + str(tx) + 'tx_salvus'
 domain = sn.domain.dim2.BoxDomain(x0=x0, x1=x1, y0=y0, y1=y1)
 
 p = sn.Project.from_domain(
@@ -115,8 +116,8 @@ mesh_roi = generate_mesh_roi(mesh_homo, roi)
 
 amplitude_ratio = 1e3
 
-s_loc = [(x, 0.3) for x in np.linspace(0.2, 0.8, 5)]
-r_loc = [(x, 0.7) for x in np.linspace(0.2, 0.8, 5)]
+s_loc = [(x, 0.3) for x in np.linspace(0.2, 0.8, tx)]
+r_loc = [(x, 0.7) for x in np.linspace(0.2, 0.8, tx)]
 
 sources = [
     sn.simple_config.source.cartesian.ScalarPoint2D(x=s[0], y=s[1], f=amplitude_ratio)
