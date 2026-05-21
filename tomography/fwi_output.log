@@ -1,0 +1,5 @@
+srun: job 3584994 queued and waiting for resources
+srun: job 3584994 has been allocated resources
+/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/python: can't open file '/home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater/tomography/tomography/FWI_salvus.py': [Errno 2] No such file or directory
+srun: error: nid010762: task 0: Exited with exit code 2
+srun: Terminating StepId=3584994.0

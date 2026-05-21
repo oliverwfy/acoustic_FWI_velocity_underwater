@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scancel 3671291 3671327)",
+      "Bash(conda env:*)",
+      "Bash(module list:*)",
+      "Bash(squeue -p workq --states=R)",
+      "Bash(sinfo -o \"%P %G %A\")",
+      "Bash(git -C /home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater status)",
+      "Bash(git -C /home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater diff --stat)",
+      "Bash(sinfo -o \"%P %a %C %G\")",
+      "Bash(squeue --me --start)",
+      "Bash(sinfo -o \"%P %a %N %G %C\" --noheader)",
+      "Bash(sinfo -o \"%N %G %C %t\" --noheader)",
+      "Read(//home/b6as/oliverwfy.b6as/**)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/home/b6as/oliverwfy.b6as"
+    ]
+  }
+}

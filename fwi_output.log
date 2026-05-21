@@ -1,0 +1,8 @@
+srun: job 3584995 queued and waiting for resources
+srun: job 3584995 has been allocated resources
+Traceback (most recent call last):
+  File "/home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater/tomography/FWI_salvus.py", line 22, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+srun: error: nid010762: task 0: Exited with exit code 1
+srun: Terminating StepId=3584995.0

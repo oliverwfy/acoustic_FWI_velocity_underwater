@@ -16,6 +16,7 @@ import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy.typing as npt
+from scipy.signal import hilbert
 
 
 import sys
@@ -651,4 +652,62 @@ def forward_simulation(project, simulation_name, events,
             delete_conflicting_previous_results=delete_previous,
         )
     project.simulations.query(block=True)
+
+def envelope_3dB_width(sig, time, db=3.0, plot=False, ax=None):
+    """
+    Compute the –N dB width of the envelope of a received pulse.
+
+    Parameters
+    ----------
+    sig  : array-like  Time-domain signal.
+    time : array-like  Corresponding time axis (any unit — returned values match).
+    db   : float       dB drop to measure (default 3.0 → –3 dB).
+    plot : bool        If True, draw the pulse + envelope + markers.
+    ax   : matplotlib Axes or None.  If None and plot=True, a new figure is created.
+
+    Returns
+    -------
+    dict with keys:
+        envelope   : ndarray  Hilbert envelope
+        peak_val   : float    Peak envelope amplitude
+        peak_time  : float    Time of peak
+        t_lo, t_hi : float    –N dB crossing times
+        width      : float    –N dB pulse width  (t_hi – t_lo)
+        thresh     : float    Amplitude threshold used
+    """
+    sig      = np.asarray(sig, dtype=float).ravel()
+    time     = np.asarray(time, dtype=float).ravel()
+    envelope = np.abs(hilbert(sig))
+
+    peak_idx  = envelope.argmax()
+    peak_val  = envelope[peak_idx]
+    thresh    = peak_val * 10 ** (-db / 20)       # amplitude: dB = 20 log10(A/A_peak)
+
+    above     = envelope >= thresh
+    left_idx  = np.where(above[:peak_idx])[0]
+    right_idx = np.where(above[peak_idx:])[0]
+    t_lo = time[left_idx[0]]              if left_idx.size  else time[0]
+    t_hi = time[peak_idx + right_idx[-1]] if right_idx.size else time[-1]
+    width = t_hi - t_lo
+
+    if plot:
+        if ax is None:
+            _, ax = plt.subplots(figsize=(9, 4), dpi=100)
+        ax.plot(time, sig,       color='red',       lw=1.2, alpha=0.7, label=r'$\phi$')
+        ax.plot(time, envelope,  color='steelblue', lw=2.0, label='Envelope')
+        ax.plot(time, -envelope, color='steelblue', lw=2.0, ls='--', alpha=0.4)
+        ax.axhline( thresh, color='orange', lw=1.2, ls='--',
+                    label=f'–{db} dB  ({thresh:.2e})')
+        ax.axhline(-thresh, color='orange', lw=1.2, ls='--')
+        ax.axvline(t_lo, color='green',  lw=1.2, ls=':', label=f't_lo = {t_lo:.4f}')
+        ax.axvline(t_hi, color='purple', lw=1.2, ls=':', label=f't_hi = {t_hi:.4f}')
+        ax.fill_betweenx([-peak_val * 1.15, peak_val * 1.15], t_lo, t_hi,
+                          alpha=0.10, color='orange', label=f'width = {width:.4f}')
+        ax.set_ylim(-peak_val * 1.15, peak_val * 1.15)
+        ax.set_xlabel("Time"); ax.set_ylabel(r"$\phi$")
+        ax.set_title(f"Envelope — –{db} dB width")
+        ax.legend(fontsize=8); ax.grid(alpha=0.3)
+
+    return dict(envelope=envelope, peak_val=peak_val, peak_time=time[peak_idx],
+                t_lo=t_lo, t_hi=t_hi, width=np.round(width/2, 10), thresh=thresh)
 

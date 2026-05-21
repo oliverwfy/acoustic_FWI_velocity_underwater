@@ -1,0 +1,45 @@
+srun: job 3263204 queued and waiting for resources
+srun: job 3263204 has been allocated resources
+--> Server: 'https://l.mondaic.com/licensing_server', User: 'bristol.support', Group: 'UniversityOfBristol'.
+--> Negotiating 1 license instance(s) for 'SalvusMesh' [license version 1.0.0] for 1 seconds ...
+--> Success! [Total duration: 0.43 seconds]
+Accordion(children=(HTML(value='\n                <head>\n                <style>\n                td {\n                border: 1px solid #dddddd;\n                text-align: left;\n                padding: 8px;\n                }\n\n                tr:nth-child(even) {\n                background-color: #dddddd;\n                }\n                </style>\n                </head>\n                <body>\n                <table style="font-family: arial,\n                              sans-serif;\n                              border-collapse: collapse;\n                              width: 100%;">\n            <tr><td>event_singlepair</td></tr></table></body>'), HTML(value='\n                <head>\n                <style>\n                td {\n                border: 1px solid #dddddd;\n                text-align: left;\n                padding: 8px;\n                }\n\n                tr:nth-child(even) {\n                background-color: #dddddd;\n                }\n                </style>\n                </head>\n                <body>\n                <table style="font-family: arial,\n                              sans-serif;\n                              border-collapse: collapse;\n                              width: 100%;">\n            <tr><td>forward_simulation_homogeneous_model</td></tr><tr><td>forward_simulation_layred_model</td></tr>\n                <tr>\n                    <td><a href="#inversion_L2" data-toggle="collapse"\n                            style="background-color: #777;\n                                color: white;\n                                padding: 9px;\n                                text-align: left;\n                                text-decoration: none;\n                                width: 100%;\n                                display: inline-block;">\n                                inversion_L2_it_...\n                        </a>\n                    <div id="inversion_L2" class="collapse">\n                    <table style="font-family: arial,\n                              sans-serif;\n                              border-collapse: collapse;\n                              width: 100%;">\n                        <tr><td>inversion_L2_it_0__trial_model_0</td></tr><tr><td>inversion_L2_it_1__trial_model_0</td></tr><tr><td>inversion_L2_it_2__trial_model_0</td></tr><tr><td>inversion_L2_it_3__trial_model_0</td></tr><tr><td>inversion_L2_it_4__trial_model_0</td></tr><tr><td>inversion_L2_it_5__trial_model_0</td></tr><tr><td>inversion_L2_it_6__trial_model_0</td></tr><tr><td>inversion_L2_it_7__trial_model_0</td></tr><tr><td>inversion_L2_it_8__trial_model_0</td></tr><tr><td>inversion_L2_it_9__trial_model_0</td></tr>\n                    </table>\n                    </div></td>\n                </tr>\n            </table></body>'), HTML(value='\n                <head>\n                <style>\n                td {\n                border: 1px solid #dddddd;\n                text-align: left;\n                padding: 8px;\n                }\n\n                tr:nth-child(even) {\n                background-color: #dddddd;\n                }\n                </style>\n                </head>\n                <body>\n                <table style="font-family: arial,\n                              sans-serif;\n                              border-collapse: collapse;\n                              width: 100%;">\n            <tr><td>misfit_L2_config</td></tr></table></body>'), HTML(value='\n                <head>\n                <style>\n                td {\n                border: 1px solid #dddddd;\n                text-align: left;\n                padding: 8px;\n                }\n\n                tr:nth-child(even) {\n                background-color: #dddddd;\n                }\n                </style>\n                </head>\n                <body>\n                <table style="font-family: arial,\n                              sans-serif;\n                              border-collapse: collapse;\n                              width: 100%;">\n            <tr><td>inversion_L2</td></tr></table></body>')), titles=('🚩   1 Events', '⚗️ 12 Simulation configurations', '⚖️ 1 Misfit configurations', '🔬 1 Inverse problem configurations'))
+[2026-03-22 01:09:59,568] [34m[1mINFO[0m: Loading project from /home/b6as/oliverwfy.b6as/workspace/acoustic_model/Project/acoustic_forward.
+[2026-03-22 01:09:59,840] [34m[1mINFO[0m: Deleting existing `forward_simulation_homogeneous_model` entity of type `simulation_configuration` ...
+[2026-03-22 01:09:59,911] [34m[1mINFO[0m: Deleting existing `forward_simulation_layred_model` entity of type `simulation_configuration` ...
+[2026-03-22 01:10:00,512] [34m[1mINFO[0m: Submitting job ...
+Uploading 1 files...
+
+🚀  Submitted job_2603220110587368_fe8f2ee7d9[0m@[34misambard_oliver[0m
+Execution time: 0 minutes and 1.17 seconds
+[2026-03-22 01:10:01,225] [34m[1mINFO[0m: Submitting job ...
+Uploading 1 files...
+
+🚀  Submitted job_2603220110231388_121d2129c3[0m@[34misambard_oliver[0m
+Execution time: 0 minutes and 0.63 seconds
+[2026-03-22 01:10:01,748] [34m[1mINFO[0m: The same misfit_configuration with name `misfit_L2_config` exists already in the project. Nothing will be done.
+Traceback (most recent call last):
+  File "/home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater/tomography/acoustic_FWI.py", line 433, in <module>
+    add_inversion(p, invconfig)
+  File "/home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater/tomography/my_code/utilities.py", line 48, in add_inversion
+    Project+= inv_config
+  File "salvus/project/project.py", line 186, in salvus.project.project.Project.__iadd__
+  File "salvus/project/project.py", line 307, in salvus.project.project.Project.add_to_project
+  File "salvus/project/components/entity_component.py", line 1149, in salvus.project.components.entity_component.EntityComponent.add
+  File "salvus/project/components/entity_component.py", line 318, in salvus.project.components.entity_component._inverse_problem_configuration_to_json
+  File "salvus/flow/collections/event.py", line 234, in salvus.flow.collections.event.Event.__eq__
+AttributeError: 'str' object has no attribute 'event_name'
+srun: error: nid010949: task 0: Exited with exit code 1
+srun: Terminating StepId=3263204.0
+srun: job 3264013 queued and waiting for resources
+srun: job 3264013 has been allocated resources
+--> Server: 'https://l.mondaic.com/licensing_server', User: 'bristol.support', Group: 'UniversityOfBristol'.
+--> Negotiating 1 license instance(s) for 'SalvusMesh' [license version 1.0.0] for 1 seconds ...
+--> Success! [Total duration: 0.59 seconds]
+srun: forcing job termination
+srun: got SIGCONT
+srun: forcing job termination
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** STEP 3264013.0 ON nid010768 CANCELLED AT 2026-03-22T02:17:04 ***
+srun: error: nid010768: task 0: Killed
+srun: Terminating StepId=3264013.0
