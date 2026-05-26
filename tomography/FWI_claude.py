@@ -36,7 +36,7 @@ VP                = 5000.0
 RHO               = 2600.0
 THICKNESS           = 0.2   # m
 
-alpha = 0.2  # thickness to wavelength ratio
+alpha = 1.6  # thickness to wavelength ratio
 f_c               = alpha * 25e3   # centre frequency [Hz]
 CENTRAL_FREQUENCY = 4 * 25e3  # Hz
 
@@ -185,7 +185,7 @@ event_ls = [event]
 
 # ## Simulation configurations
 
-end_time               = 2e-4 * 2
+end_time               = 2e-4 
 start_time             = 0
 sampling_rate_in_hertz = CENTRAL_FREQUENCY * 100
 time_shift_in_seconds  = 1 / f_c
@@ -583,8 +583,9 @@ plt.show()
 
 # Figure 3 — full sensitivity kernel with ellipse coverage
 fig3, ax_K = plt.subplots(figsize=(8, 6), dpi=100)
-tp = ax_K.tripcolor(x, y, normalize(K_VP), cmap='RdBu', shading='gouraud', vmin=-1, vmax=1)
-plt.colorbar(tp, ax=ax_K, label=r'$\partial J/\partial \ln V_P$  [normalised]')
+_K_VP_max = np.max(np.abs(K_VP))
+tp = ax_K.tripcolor(x, y, K_VP, cmap='RdBu', shading='gouraud', vmin=-_K_VP_max, vmax=_K_VP_max)
+plt.colorbar(tp, ax=ax_K, label=r'$\partial J/\partial \ln V_P$')
 _add_ellipse_overlay(ax_K, [s_loc], r_loc, _a_ell)
 ax_K.set_xlabel('X (m)')
 ax_K.set_ylabel('Y (m)')
@@ -597,11 +598,23 @@ plt.tight_layout()
 plt.show()
 
 # Figure 4 — K(x) within ROI with ellipse coverage
+# Apply ellipse mask: zero K outside the first Fresnel zone
+_d1_roi = np.sqrt((x_roi - s_loc[0])**2 + (y_roi - s_loc[1])**2)
+_d2_roi = np.sqrt((x_roi - r_loc[0][0])**2 + (y_roi - r_loc[0][1])**2)
+_ellipse_mask_roi = (_d1_roi + _d2_roi) <= 2 * _a_ell
+K_roi_masked = np.where(_ellipse_mask_roi, K_roi, 0.0)
+
 fig4, ax_2d = plt.subplots(figsize=(7, 4), dpi=100)
-tp = ax_2d.tripcolor(x_roi, y_roi, normalize(K_roi),
-                     cmap='RdBu', shading='gouraud', vmin=-1, vmax=1)
-plt.colorbar(tp, ax=ax_2d, label=r'$\partial J/\partial \ln V_P$  [normalised]')
-_add_ellipse_overlay(ax_2d, [s_loc], r_loc, _a_ell)
+_K_roi_max = np.max(np.abs(K_roi_masked))
+tp = ax_2d.tripcolor(x_roi, y_roi, K_roi_masked,
+                     cmap='RdBu', shading='gouraud', vmin=-_K_roi_max, vmax=_K_roi_max)
+plt.colorbar(tp, ax=ax_2d, label=r'$\partial J/\partial \ln V_P$')
+_add_ellipse_overlay(ax_2d, [s_loc], r_loc, _a_ell, label=False)
+from matplotlib.lines import Line2D
+_ellipse_proxy = Line2D([0], [0], color='white', linewidth=1.5,
+                        linestyle='dashed', label='Sensitivity region')
+ax_2d.legend(handles=[_ellipse_proxy], fontsize=8, loc='upper right',
+             facecolor='dimgray', labelcolor='white', edgecolor='white')
 ax_2d.set_xlabel('X (m)')
 ax_2d.set_ylabel('Y (m)')
 ax_2d.set_title(f'$K_{{VP}}$  in ROI  [{x0}, {x1}] × [{y0}, {y1}]', fontsize=11)
@@ -767,11 +780,11 @@ def objective(m_flat):
     K_A     = np.where(np.isfinite(K_A), K_A, 0.0)
     K_lnVP = K_A * (-2.0 / vp_nodal**2)
 
-    K_norm = K_lnVP / np.max(np.abs(K_lnVP)) if np.max(np.abs(K_lnVP)) > 0 else K_lnVP
+    _K_lnVP_max = np.max(np.abs(K_lnVP)) if np.max(np.abs(K_lnVP)) > 0 else 1.0
     fig_k, ax_k = plt.subplots(figsize=(8, 6), dpi=100)
     tp_k = ax_k.tripcolor(base_mesh.points[:, 0], base_mesh.points[:, 1],
-                           K_norm, cmap="RdBu", shading="gouraud", vmin=-1, vmax=1)
-    plt.colorbar(tp_k, ax=ax_k, label=r"$\partial J/\partial \ln V_P$  [normalised]")
+                           K_lnVP, cmap="RdBu", shading="gouraud", vmin=-_K_lnVP_max, vmax=_K_lnVP_max)
+    plt.colorbar(tp_k, ax=ax_k, label=r"$\partial J/\partial \ln V_P$")
     ax_k.set_xlabel("X (m)"); ax_k.set_ylabel("Y (m)")
     ax_k.set_title(rf"$\partial J/\partial \ln V_P$ — iter {it}  ls {ls}", fontsize=12)
     ax_k.set_xlim(0, 1); ax_k.set_ylim(0, 1); ax_k.set_aspect("equal")
