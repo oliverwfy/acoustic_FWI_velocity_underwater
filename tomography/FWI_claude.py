@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 import importlib
 from pathlib import Path
+
 path_to_add = str(Path.cwd() / "tomography")
 if path_to_add not in sys.path:
     sys.path.append(path_to_add)
@@ -25,36 +26,31 @@ from salvus.toolbox.helpers.wavefield_output import (
 
 import xarray as xr
 
-# ## Configuration, project and mesh
+# ── Configuration ─────────────────────────────────────────────────────────
 
-# ---- Salvus site --------------------------------------------------------
 SITE_NAME = "isambard_oliver"
 RANKS = 8
+SAMPLING_INTERVAL = 50
 
-# ---- Physical parameters ------------------------------------------------
-VP                = 5000.0
-RHO               = 2600.0
-THICKNESS           = 0.2   # m
+VP    = 1500.0
+RHO   = 1025.0
+THICKNESS = 0.2
+vc    = 1400
 
-alpha = 1.6  # thickness to wavelength ratio
-f_c               = alpha * 25e3   # centre frequency [Hz]
-CENTRAL_FREQUENCY = 4 * 25e3  # Hz
+alpha = 0.8
+f_c   = alpha * 75e2
+CENTRAL_FREQUENCY = 4 * 75e2
 
-
-
-
-# ---- Domain -------------------------------------------------------------
 x0, x1 = 0.0, 1.0
 y0, y1 = 0.0, 1.0
 
-# ---- Project ------------------------------------------------------------
 PROJECT_DIR_WIN = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/Project'
 DATA_DIR_WIN    = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/data'
-IMAGE_DIR_WIN   = '/home/b6as/oliverwfy.b6as/workspace/acoustic_model/image'
+IMAGE_DIR       = Path('/home/b6as/oliverwfy.b6as/workspace/acoustic_FWI_velocity_underwater/image')
 
 Path(PROJECT_DIR_WIN).mkdir(parents=True, exist_ok=True)
 Path(DATA_DIR_WIN).mkdir(parents=True, exist_ok=True)
-Path(IMAGE_DIR_WIN).mkdir(parents=True, exist_ok=True)
+IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 PROJECT_NAME = f'acoustic_forward_single_pairs_alpha_{alpha}'
 domain = sn.domain.dim2.BoxDomain(x0=x0, x1=x1, y0=y0, y1=y1)
@@ -63,24 +59,21 @@ p = sn.Project.from_domain(
     path=Path(PROJECT_DIR_WIN, PROJECT_NAME), domain=domain, load_if_exists=True
 )
 
-# ---- Mesh resolution ----------------------------------------------------
 elements_per_wavelength = 3
 model_order             = 4
-reference_velocity      = 5000
+reference_velocity      = VP
 number_of_wavelengths   = 2
 reference_frequency     = CENTRAL_FREQUENCY * 2
 free_surfaces           = ['y0', 'y1']
 
-# ---- True (layered) model -----------------------------------------------
 m_true = sn.layered_meshing.LayeredModel([
     sn.material.from_params(rho=RHO, vp=VP),
     sn.layered_meshing.interface.Hyperplane.at(0.6),
-    sn.material.from_params(rho=RHO, vp=1.5 * VP),
+    sn.material.from_params(rho=RHO, vp=vc),
     sn.layered_meshing.interface.Hyperplane.at(0.4),
     sn.material.from_params(rho=RHO, vp=VP),
 ])
 
-# ---- Homogeneous starting model -----------------------------------------
 m_homo = sn.material.from_params(rho=RHO, vp=VP)
 
 ab_params = salvus.mesh.simple_mesh.basic_mesh.AbsorbingBoundaryParameters(
@@ -108,65 +101,13 @@ mesh = lm.mesh_from_domain(
     mesh_resolution=mesh_res,
 )
 
-# # salvus project
-# p_salvus = sn.Project.from_domain(
-#     path=Path(PROJECT_DIR_WIN, 'acoustic_forward_5paris_salvus'), domain=domain, load_if_exists=True
-# )
-# p_salvus.inversions.get_model("inversion_L2", 5)
-
-# # VP_elemental = elemental_nodal_to_elemental_field(mesh.element_nodal_fields['VP'], mesh)
-# # print("ENF shape      :", mesh.element_nodal_fields['VP'].shape)
-# # print("Elemental shape:", VP_elemental.shape)
-# # print(f"VP stats — min: {VP_elemental.min():.1f}  max: {VP_elemental.max():.1f}  mean: {VP_elemental.mean():.1f}")
-# # centroids = mesh.get_element_centroid()   # (nelem, 2)
-# # x_c, y_c = centroids[:, 0], centroids[:, 1]
-# # roi_elem = (x_c >= x0) & (x_c <= x1) & (y_c >= y0) & (y_c <= y1)
-# # x_r = x_c[roi_elem]
-# # y_r = y_c[roi_elem]
-# # vp_r = VP_elemental[roi_elem]
-# # xs = np.unique(x_r)
-# # ys = np.unique(y_r)
-# # nx, ny = len(xs), len(ys)
-# # idx = np.lexsort((x_r, y_r))
-# # VP_2d = vp_r[idx].reshape(ny, nx)
-# # X_2d  = x_r[idx].reshape(ny, nx)
-# # Y_2d  = y_r[idx].reshape(ny, nx)
-# # fig, ax = plt.subplots(figsize=(7, 4), dpi=100)
-# # pm = ax.pcolormesh(X_2d, Y_2d, VP_2d, cmap='viridis', shading='nearest')
-# # plt.colorbar(pm, ax=ax, label='VP [m/s]')
-# # ax.set_xlabel('X [m]')
-# # ax.set_ylabel('Y [m]')
-# # ax.set_title(f'VP')
-# # ax.set_aspect('equal')
-# # plt.tight_layout()
-# # plt.show()
-
-# ## Source / receiver setup
-
-# event_single = 'single_pair'
-# amplitude_ratio = 1e5
-# s_loc = (0.5, 0.3)
-# r_loc = [(0.5, 0.7)]
-# receivers = [
-#     sn.simple_config.receiver.cartesian.Point2D(
-#         x=r[0], y=r[1], station_code=f"R{j+1}", fields=["phi"]
-#     )
-#     for j, r in enumerate(r_loc)
-# ]
-# source = sn.simple_config.source.cartesian.ScalarPoint2D(
-#     x=s_loc[0], y=s_loc[1], f=amplitude_ratio
-# )
-# p.add_to_project(
-#     sn.Event(event_name=event_single, sources=source, receivers=receivers)
-# )
+# ── Source / receiver setup ───────────────────────────────────────────────
 
 event = 'single_pairs'
-amplitude_ratio = 1e3
+amplitude_ratio = 6e4
 
 s_loc = (0.5, 0.3)
 r_loc = [(0.5, 0.7)]
-
-# r_loc = [(x, 0.7) for x in np.linspace(0.2, 0.8, 5)]
 
 receivers = [
     sn.simple_config.receiver.cartesian.Point2D(
@@ -183,11 +124,11 @@ p.add_to_project(
 
 event_ls = [event]
 
-# ## Simulation configurations
+# ── Simulation configurations ─────────────────────────────────────────────
 
-end_time               = 2e-4 
+end_time               = 0.6e-3
 start_time             = 0
-sampling_rate_in_hertz = CENTRAL_FREQUENCY * 100
+sampling_rate_in_hertz = CENTRAL_FREQUENCY * 200
 time_shift_in_seconds  = 1 / f_c
 
 wavelet = sn.simple_config.stf.Ricker(
@@ -206,7 +147,6 @@ event_config = sn.EventConfiguration(
     waveform_simulation_configuration=waveform_config,
 )
 
-# Homogeneous (starting) model
 p.add_to_project(
     sn.UnstructuredMeshSimulationConfiguration(
         unstructured_mesh=mesh_homo,
@@ -216,7 +156,6 @@ p.add_to_project(
     overwrite=True,
 )
 
-# True (layered) model — used to generate observed data
 p.add_to_project(
     sn.UnstructuredMeshSimulationConfiguration(
         unstructured_mesh=mesh,
@@ -226,11 +165,7 @@ p.add_to_project(
     overwrite=True,
 )
 
-p.viz.nb.simulation_setup(
-    simulation_configuration='forward_simulation_layred_model', events=event
-)
-
-# ## Helper functions
+# ── Helper functions ──────────────────────────────────────────────────────
 
 def forward_simulation(simulation_name, events,
                        fields=None, sampling_interval_in_time_steps=10):
@@ -329,8 +264,8 @@ def adjoint_wavefield(p, event_adj, event_config_adj,
                       model_simulation_name='forward_simulation_homogeneous_model',
                       field='phi_t', iteration=0,
                       sampling_interval_in_time_steps=10):
-    simulation_adj  = f"adjoint_{iteration}"
-    mesh_current    = p.simulations.get_mesh(model_simulation_name)
+    simulation_adj = f"adjoint_{iteration}"
+    mesh_current   = p.simulations.get_mesh(model_simulation_name)
 
     p.add_to_project(
         sn.UnstructuredMeshSimulationConfiguration(
@@ -367,15 +302,15 @@ def adjoint_wavefield(p, event_adj, event_config_adj,
 
 def compute_gradient(forward_wavefield, adjoint_wavefield):
     """
-    Sensitivity kernel K_A = ∂J/∂A  (zero-lag cross-correlation):
+    Sensitivity kernel K_A = dJ/dA  (zero-lag cross-correlation):
 
-        K_A(x) = Σ_t φ†_t(x, T-t) · φ_t(x, t) · Δt
+        K_A(x) = sum_t phi_t_dag(x, T-t) * phi_t(x, t) * dt
 
-    φ† is time-reversed before the inner product because the adjoint
+    phi_dag is time-reversed before the inner product because the adjoint
     simulation runs forward in time (source = time-reversed residual).
     """
-    fwd = forward_wavefield.values.squeeze()    # (nodes, T)
-    adj = adjoint_wavefield.values.squeeze()    # (nodes, T_adj)
+    fwd = forward_wavefield.values.squeeze()
+    adj = adjoint_wavefield.values.squeeze()
 
     t_coord = forward_wavefield.coords.get('t', forward_wavefield.coords.get('time'))
     t_fwd   = t_coord.values
@@ -391,9 +326,7 @@ def compute_gradient(forward_wavefield, adjoint_wavefield):
     return np.einsum('nt,nt->n', adj_flipped, fwd) * dt
 
 
-# ## Run initial simulations
-# Simulate the true (layered) model to generate observed data, and the
-# homogeneous model with phi_tt volume output as the FWI starting point.
+# ── Run initial simulations ───────────────────────────────────────────────
 
 t0 = datetime.now()
 
@@ -407,13 +340,13 @@ forward_simulation(
     simulation_name='forward_simulation_homogeneous_model',
     events=event,
     fields=['phi_t'],
-    sampling_interval_in_time_steps=10,
+    sampling_interval_in_time_steps=SAMPLING_INTERVAL,
 )
 
 elapsed = (datetime.now() - t0).total_seconds()
 print(f"Initial simulations done in {int(elapsed//60)}m {elapsed%60:.1f}s")
 
-# ## Adjoint source, adjoint wavefield and sensitivity kernel (iteration 0)
+# ── Iteration 0: adjoint source, adjoint wavefield and sensitivity kernel ─
 
 phi_homo, phi_t = extract_data(
     simulation='forward_simulation_homogeneous_model',
@@ -439,13 +372,13 @@ phi_t_adj = adjoint_wavefield(
     model_simulation_name='forward_simulation_homogeneous_model',
     field='phi_t',
     iteration=0,
-    sampling_interval_in_time_steps=10,
+    sampling_interval_in_time_steps=SAMPLING_INTERVAL,
 )
 
 mesh_viz = p.simulations.get_mesh('forward_simulation_homogeneous_model')
 x, y     = mesh_viz.points[:, 0], mesh_viz.points[:, 1]
 
-ROI = (0.0, 1.0, 0.4, 0.6)                          # (x0, x1, y0, y1)
+ROI = (0.0, 1.0, 0.4, 0.6)
 K_A = compute_gradient(phi_t, phi_t_adj)
 K_A = np.where(np.isfinite(K_A), K_A, 0.0)
 
@@ -455,13 +388,13 @@ vp_nodal = elemental_nodal_to_nodal_field(
 
 K_VP = K_A * (-2.0 / vp_nodal**2)
 
-x0, x1, y0, y1 = ROI
-roi_mask = (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)
+x0_r, x1_r, y0_r, y1_r = ROI
+roi_mask = (x >= x0_r) & (x <= x1_r) & (y >= y0_r) & (y <= y1_r)
 K_roi    = K_VP[roi_mask]
 x_roi    = x[roi_mask]
 y_roi    = y[roi_mask]
 
-time_wf    = phi_homo.time.values
+time_wf = phi_homo.time.values
 
 fwd = phi_t.values.squeeze()
 adj = phi_t_adj.values.squeeze()
@@ -479,15 +412,6 @@ T         = fwd.shape[-1]
 dt        = float(t_fwd[1] - t_fwd[0])
 t_indices = [T // 4, T // 2, 3 * T // 4]
 
-def snap_clim(arr):
-    v = np.percentile(np.abs(arr), 98)
-    return dict(vmin=-v, vmax=v)
-
-def normalize(arr):
-    """Normalise to [-1, 1]."""
-    m = np.nanmax(np.abs(arr))
-    return arr / m if m > 0 else arr
-
 _xg, _yg = np.linspace(0, 1, 400), np.linspace(0, 1, 400)
 _Xg, _Yg = np.meshgrid(_xg, _yg)
 
@@ -496,8 +420,9 @@ width_3dB = envelope_3dB_width(phi_homo[0], time_wf, plot=False)['width'] / 2
 _d_sr  = np.sqrt((s_loc[0] - r_loc[0][0])**2 + (s_loc[1] - r_loc[0][1])**2)
 _a_ell = (_d_sr + VP * width_3dB) / 2
 
+# ── Plotting helpers ──────────────────────────────────────────────────────
+
 def _add_ellipse_overlay(ax, s_locs, r_locs, a, label=True):
-    """Draw source-receiver ellipse contours and scatter source/receiver markers."""
     from matplotlib.lines import Line2D
     for s in s_locs:
         for r in r_locs:
@@ -517,124 +442,140 @@ def _add_ellipse_overlay(ax, s_locs, r_locs, a, label=True):
                   fontsize=8, loc='upper right',
                   facecolor='dimgray', labelcolor='white', edgecolor='white')
 
-# Figure 1 — waveforms and adjoint source
-fig1, axs = plt.subplots(1, 2, figsize=(14, 4), dpi=100)
 
-axs[0].plot(time_wf * 1e3, np.array(phi_obs[0]),  color='red',   lw=1.5, label=r'$\phi_\mathrm{obs}$')
-axs[0].plot(time_wf * 1e3, np.array(phi_homo[0]), color='green', lw=1.5, label=r'$\phi^{(0)}$')
-axs[0].legend(fontsize=11)
-axs[0].set_xlabel('Time (ms)')
-axs[0].set_ylabel(r'$\phi$')
-axs[0].set_title('Observed vs synthetic')
-axs[0].grid(alpha=0.35)
+def normalize(arr):
+    m = np.nanmax(np.abs(arr))
+    return arr / m if m > 0 else arr
 
-axs[1].plot(time_wf * 1e3, np.array(-f_adj[0]), color='gray', lw=1.5)
-axs[1].axhline(0, color='k', lw=0.5, ls='--')
-axs[1].set_xlabel('Time (ms)')
-axs[1].set_ylabel(r'$f^\dagger$')
-axs[1].set_title(r'Adjoint source $f^\dagger$ (time-reversed residual)')
-axs[1].grid(alpha=0.35)
 
-plt.tight_layout()
-plt.show()
+def plot_fwi_diagnostics(it, phi_obs, phi_syn, f_adj, phi_t, phi_t_adj,
+                          K_VP, K_roi, x, y, x_roi, y_roi,
+                          x0_roi, x1_roi, y0_roi, y1_roi,
+                          s_loc, r_loc, a_ell, save=True):
+    from matplotlib.lines import Line2D
+    from matplotlib.gridspec import GridSpec
 
-# Figure 2 — how K is built: phi_tt | phi†(T-t) | product per time step
-from matplotlib.gridspec import GridSpec
+    time_wf = phi_obs.time.values
 
-fig2 = plt.figure(figsize=(17, 15), dpi=100)
-gs = GridSpec(3, 4, figure=fig2, width_ratios=[1, 1, 1, 0.04],
-              hspace=0.45, wspace=0.35)
-axes = [[fig2.add_subplot(gs[r, c]) for c in range(3)] for r in range(3)]
-cax  = fig2.add_subplot(gs[1, 3])
+    # Figure 1: waveforms + adjoint source
+    fig1, axs = plt.subplots(1, 2, figsize=(14, 4), dpi=100)
+    axs[0].plot(time_wf * 1e3, np.array(phi_obs[0]), color='red',   lw=1.5, label=r'$\phi_\mathrm{obs}$')
+    axs[0].plot(time_wf * 1e3, np.array(phi_syn[0]), color='green', lw=1.5, label=rf'$\phi^{{({it})}}$')
+    axs[0].legend(fontsize=11)
+    axs[0].set_xlabel('Time (ms)')
+    axs[0].set_ylabel(r'$\phi$')
+    axs[0].set_title(f'Observed vs synthetic  (iter {it})')
+    axs[0].grid(alpha=0.35)
+    axs[1].plot(time_wf * 1e3, np.array(-f_adj[0]) * sampling_rate_in_hertz, color='gray', lw=1.5)
+    axs[1].axhline(0, color='k', lw=0.5, ls='--')
+    axs[1].set_xlabel('Time (ms)')
+    axs[1].set_ylabel(r'$f^\dagger$')
+    axs[1].set_title(r'Adjoint source $f^\dagger$ (time-reversed residual)')
+    axs[1].grid(alpha=0.35)
+    plt.tight_layout()
+    if save:
+        plt.savefig(IMAGE_DIR / f'iter_{it:03d}_adjoint_source_alpha_{alpha}_c_{vc}.png')
+    plt.show()
 
-col_titles = [r'$\phi_{tt}(x,\,t)$  [normalised]',
-              r'$\phi^\dagger(x,\,T{-}t)$  [normalised]',
-              r'$\phi_{tt}\;\cdot\;\phi^\dagger$  [normalised]']
+    # Figure 2: wavefield snapshots
+    fwd = phi_t.values.squeeze()
+    adj = phi_t_adj.values.squeeze()
+    t_fwd = phi_t.coords.get('t', phi_t.coords.get('time')).values
+    t_adj = phi_t_adj.coords.get('t', phi_t_adj.coords.get('time')).values
+    if adj.shape[-1] != fwd.shape[-1]:
+        from scipy.interpolate import interp1d
+        adj = interp1d(t_adj, adj, axis=-1, kind='linear',
+                       bounds_error=False, fill_value=0.0)(t_fwd)
+    adj_flipped = np.flip(adj, axis=-1)
+    T = fwd.shape[-1]
+    t_indices = [T // 4, T // 2, 3 * T // 4]
 
-for col, title in enumerate(col_titles):
-    axes[0][col].set_title(title, fontsize=12, pad=8)
+    fig2 = plt.figure(figsize=(17, 15), dpi=100)
+    gs = GridSpec(3, 4, figure=fig2, width_ratios=[1, 1, 1, 0.04],
+                  hspace=0.45, wspace=0.35)
+    axes2 = [[fig2.add_subplot(gs[r, c]) for c in range(3)] for r in range(3)]
+    cax   = fig2.add_subplot(gs[1, 3])
+    col_titles = [r'$\phi_{tt}(x,\,t)$  [normalised]',
+                  r'$\phi^\dagger(x,\,T{-}t)$  [normalised]',
+                  r'$\phi_{tt}\;\cdot\;\phi^\dagger$  [normalised]']
+    for col, title in enumerate(col_titles):
+        axes2[0][col].set_title(title, fontsize=12, pad=8)
+    tp_last = None
+    for row, ti in enumerate(t_indices):
+        t_ms = t_fwd[ti] * 1e3
+        s_fwd  = normalize(fwd[:, ti])
+        s_adj  = normalize(adj_flipped[:, ti])
+        s_prod = normalize(s_fwd * s_adj)
+        for col, (snap, lbl) in enumerate([(s_fwd,  r'$\phi_{t} (t)$'),
+                                            (s_adj,  r'$\phi^\dagger_{t} (T-t)$'),
+                                            (s_prod, r'$\phi_{t} (t) * \phi^\dagger_{t} (T-t)$')]):
+            ax = axes2[row][col]
+            tp = ax.tripcolor(x, y, snap, cmap='RdBu', shading='gouraud', vmin=-1, vmax=1)
+            ax.set_xlabel('X (m)'); ax.set_ylabel('Y (m)')
+            ax.set_title(f'{lbl}  at  t = {t_ms:.2f} ms', fontsize=10)
+            ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.set_aspect('equal'); ax.grid(alpha=0.15)
+            if row == 1 and col == 2:
+                tp_last = tp
+    fig2.colorbar(tp_last, cax=cax, label='normalised amplitude')
+    if save:
+        plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_intermediate_alpha_{alpha}_c_{vc}.png')
+    plt.show()
 
-tp_last = None
-for row, ti in enumerate(t_indices):
-    t_ms = t_fwd[ti] * 1e3
+    # Figure 3: full sensitivity kernel
+    fig3, ax_K = plt.subplots(figsize=(8, 6), dpi=100)
+    _K_VP_max = np.max(np.abs(K_VP))
+    tp = ax_K.tripcolor(x, y, K_VP, cmap='RdBu', shading='gouraud',
+                        vmin=-_K_VP_max, vmax=_K_VP_max)
+    plt.colorbar(tp, ax=ax_K, label=r'$\partial J/\partial \ln V_P$')
+    _add_ellipse_overlay(ax_K, [s_loc], r_loc, a_ell)
+    ax_K.set_xlabel('X (m)'); ax_K.set_ylabel('Y (m)')
+    ax_K.set_title(rf'$K_{{VP}}$  —  full domain  (iter {it})', fontsize=12)
+    ax_K.set_xlim(0, 1); ax_K.set_ylim(0, 1); ax_K.set_aspect('equal'); ax_K.grid(alpha=0.15)
+    plt.tight_layout()
+    if save:
+        plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_full_alpha_{alpha}_c_{vc}.png')
+    plt.show()
 
-    s_fwd  = normalize(fwd[:, ti])
-    s_adj  = normalize(adj_flipped[:, ti])
-    s_prod = normalize(s_fwd * s_adj)
+    # Figure 4: ROI sensitivity kernel with ellipse mask
+    _d1 = np.sqrt((x_roi - s_loc[0])**2 + (y_roi - s_loc[1])**2)
+    _d2 = np.sqrt((x_roi - r_loc[0][0])**2 + (y_roi - r_loc[0][1])**2)
+    K_roi_masked = np.where((_d1 + _d2) <= 2 * a_ell, K_roi, 0.0)
+    _K_roi_max = np.max(np.abs(K_roi_masked))
+    fig4, ax_2d = plt.subplots(figsize=(8, 6), dpi=100)
+    tp = ax_2d.tripcolor(x_roi, y_roi, K_roi_masked,
+                         cmap='RdBu', shading='gouraud', vmin=-_K_roi_max, vmax=_K_roi_max)
+    plt.colorbar(tp, ax=ax_2d, label=r'$\partial J/\partial \ln V_P$')
+    _add_ellipse_overlay(ax_2d, [s_loc], r_loc, a_ell, label=False)
+    _ellipse_proxy = Line2D([0], [0], color='white', linewidth=1.5,
+                            linestyle='dashed', label='Sensitivity region')
+    ax_2d.legend(handles=[_ellipse_proxy], fontsize=8, loc='upper right',
+                 facecolor='dimgray', labelcolor='white', edgecolor='white')
+    ax_2d.set_xlabel('X (m)'); ax_2d.set_ylabel('Y (m)')
+    ax_2d.set_title(
+        f'$K_{{VP}}$  in ROI  [{x0_roi}, {x1_roi}] x [{y0_roi}, {y1_roi}]  (iter {it})',
+        fontsize=12,
+    )
+    ax_2d.set_xlim(x0_roi, x1_roi); ax_2d.set_ylim(y0_roi, y1_roi)
+    ax_2d.set_aspect('equal'); ax_2d.grid(alpha=0.15)
+    plt.tight_layout()
+    if save:
+        plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_roi_alpha_{alpha}_c_{vc}.png')
+    plt.show()
 
-    for col, (snap, lbl) in enumerate([(s_fwd,  r'$\phi_{t} (t)$'),
-                                        (s_adj,  r'$\phi^\dagger_{t} (T-t)$'),
-                                        (s_prod, r'$\phi_{t} (t) * \phi^\dagger_{t} (T-t)$')]):
-        ax = axes[row][col]
-        tp = ax.tripcolor(x, y, snap, cmap='RdBu', shading='gouraud',
-                          vmin=-1, vmax=1)
-        ax.set_xlabel('X (m)')
-        ax.set_ylabel('Y (m)')
-        ax.set_title(f'{lbl}  at  t = {t_ms:.2f} ms', fontsize=10)
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.set_aspect('equal')
-        ax.grid(alpha=0.15)
-        if row == 1 and col == 2:
-            tp_last = tp
 
-fig2.colorbar(tp_last, cax=cax, label='normalised amplitude')
-plt.show()
+plot_fwi_diagnostics(
+    it=0,
+    phi_obs=phi_obs, phi_syn=phi_homo, f_adj=f_adj,
+    phi_t=phi_t, phi_t_adj=phi_t_adj,
+    K_VP=K_VP, K_roi=K_roi,
+    x=x, y=y, x_roi=x_roi, y_roi=y_roi,
+    x0_roi=x0_r, x1_roi=x1_r, y0_roi=y0_r, y1_roi=y1_r,
+    s_loc=s_loc, r_loc=r_loc, a_ell=_a_ell,
+)
 
-# Figure 3 — full sensitivity kernel with ellipse coverage
-fig3, ax_K = plt.subplots(figsize=(8, 6), dpi=100)
-_K_VP_max = np.max(np.abs(K_VP))
-tp = ax_K.tripcolor(x, y, K_VP, cmap='RdBu', shading='gouraud', vmin=-_K_VP_max, vmax=_K_VP_max)
-plt.colorbar(tp, ax=ax_K, label=r'$\partial J/\partial \ln V_P$')
-_add_ellipse_overlay(ax_K, [s_loc], r_loc, _a_ell)
-ax_K.set_xlabel('X (m)')
-ax_K.set_ylabel('Y (m)')
-ax_K.set_title(r'$K_{VP}$  —  full domain', fontsize=12)
-ax_K.set_xlim(0, 1)
-ax_K.set_ylim(0, 1)
-ax_K.set_aspect('equal')
-ax_K.grid(alpha=0.15)
-plt.tight_layout()
-plt.show()
+# ── FWI loop (L-BFGS + Trust Region) ─────────────────────────────────────
 
-# Figure 4 — K(x) within ROI with ellipse coverage
-# Apply ellipse mask: zero K outside the first Fresnel zone
-_d1_roi = np.sqrt((x_roi - s_loc[0])**2 + (y_roi - s_loc[1])**2)
-_d2_roi = np.sqrt((x_roi - r_loc[0][0])**2 + (y_roi - r_loc[0][1])**2)
-_ellipse_mask_roi = (_d1_roi + _d2_roi) <= 2 * _a_ell
-K_roi_masked = np.where(_ellipse_mask_roi, K_roi, 0.0)
-
-fig4, ax_2d = plt.subplots(figsize=(7, 4), dpi=100)
-_K_roi_max = np.max(np.abs(K_roi_masked))
-tp = ax_2d.tripcolor(x_roi, y_roi, K_roi_masked,
-                     cmap='RdBu', shading='gouraud', vmin=-_K_roi_max, vmax=_K_roi_max)
-plt.colorbar(tp, ax=ax_2d, label=r'$\partial J/\partial \ln V_P$')
-_add_ellipse_overlay(ax_2d, [s_loc], r_loc, _a_ell, label=False)
-from matplotlib.lines import Line2D
-_ellipse_proxy = Line2D([0], [0], color='white', linewidth=1.5,
-                        linestyle='dashed', label='Sensitivity region')
-ax_2d.legend(handles=[_ellipse_proxy], fontsize=8, loc='upper right',
-             facecolor='dimgray', labelcolor='white', edgecolor='white')
-ax_2d.set_xlabel('X (m)')
-ax_2d.set_ylabel('Y (m)')
-ax_2d.set_title(f'$K_{{VP}}$  in ROI  [{x0}, {x1}] × [{y0}, {y1}]', fontsize=11)
-ax_2d.set_xlim(x0, x1)
-ax_2d.set_ylim(y0, y1)
-ax_2d.set_aspect('equal')
-ax_2d.grid(alpha=0.15)
-plt.tight_layout()
-plt.show()
-
-# # da = salvus.opt.misfits.l2_misfit.l2_misfit_and_adjoint_source(...)
-# # import time
-# # p.add_to_project(sn.MisfitConfiguration(...))
-# # while not p.actions.inversion.compute_misfits(...): time.sleep(10.0)
-# # while not p.actions.inversion.compute_gradients(...): time.sleep(10.0)
-# # p.viz.nb.gradients(...)
-
-# ── Outer-scope setup ────────────────────────────────────────────────────
-VP_MIN, VP_MAX    = VP * 0.5, VP * 2.0
-SAMPLING_INTERVAL = 10
+VP_MIN, VP_MAX    = VP * 0.5, VP * 1.5
 
 obs_simulation  = 'forward_simulation_layred_model'
 init_simulation = 'forward_simulation_homogeneous_model'
@@ -678,12 +619,12 @@ _vp_bg_nodal = elemental_nodal_to_nodal_field(
 _y_round_full = np.round(_y, decimals=8)
 _y_round_roi  = np.round(_y[roi_mask], decimals=8)
 
-_fwi_iter = [0]
-_fwi_ls   = [0]
+_fwi_iter  = [0]
+_fwi_ls    = [0]
+_diag_cache = {}
 
 
 def _average_vp_in_x(vp_nodal):
-    """Enforce layered prior v(y): replace VP at each y-level with its x-mean."""
     out = vp_nodal.copy()
     for yv in np.unique(_y_round_full):
         mask = _y_round_full == yv
@@ -698,11 +639,12 @@ def objective(m_flat):
     Parameters
     ----------
     m_flat : np.ndarray, shape (n_roi_nodes,)
+        Model vector: ln(VP) at each ROI node.
 
     Returns
     -------
     misfit : float
-    grad   : np.ndarray, shape (n_roi_nodes,)
+    grad   : np.ndarray, shape (n_roi_nodes,)   dJ/d_ln(VP), zeroed outside Fresnel zone
     """
     it      = _fwi_iter[0]
     ls      = _fwi_ls[0]
@@ -765,7 +707,7 @@ def objective(m_flat):
         sim_name, event, receiver_field='phi', field='phi_t',
     )
 
-    misfit, _, event_adj, event_config_adj = misfit_adjoint_source(
+    misfit, f_adj_wf, event_adj, event_config_adj = misfit_adjoint_source(
         phi_obs, phi_syn, event=event, iteration=sim_name,
     )
 
@@ -780,10 +722,20 @@ def objective(m_flat):
     K_A     = np.where(np.isfinite(K_A), K_A, 0.0)
     K_lnVP = K_A * (-2.0 / vp_nodal**2)
 
+    _diag_cache.update({
+        'phi_syn':   phi_syn,
+        'f_adj':     f_adj_wf,
+        'phi_t':     phi_t_it,
+        'phi_t_adj': phi_adj_it,
+        'K_VP':      K_lnVP,
+        'K_roi':     K_lnVP[roi_mask],
+    })
+
     _K_lnVP_max = np.max(np.abs(K_lnVP)) if np.max(np.abs(K_lnVP)) > 0 else 1.0
     fig_k, ax_k = plt.subplots(figsize=(8, 6), dpi=100)
     tp_k = ax_k.tripcolor(base_mesh.points[:, 0], base_mesh.points[:, 1],
-                           K_lnVP, cmap="RdBu", shading="gouraud", vmin=-_K_lnVP_max, vmax=_K_lnVP_max)
+                           K_lnVP, cmap="RdBu", shading="gouraud",
+                           vmin=-_K_lnVP_max, vmax=_K_lnVP_max)
     plt.colorbar(tp_k, ax=ax_k, label=r"$\partial J/\partial \ln V_P$")
     ax_k.set_xlabel("X (m)"); ax_k.set_ylabel("Y (m)")
     ax_k.set_title(rf"$\partial J/\partial \ln V_P$ — iter {it}  ls {ls}", fontsize=12)
@@ -796,15 +748,11 @@ def objective(m_flat):
     g_max = np.max(np.abs(grad_lnvp))
     label = 'grad' if ls == 0 else f'ls_{ls}'
     print(f"  iter {it:3d} {label:6s} | misfit = {float(misfit):.6e}"
-          f" | |∂J/∂lnVP| max = {g_max:.3e}")
+          f" | |dJ/d_lnVP| max = {g_max:.3e}")
     return float(misfit), grad_lnvp.ravel()
 
 
-# ## FWI loop — L-BFGS with Trust Region
-# Model parameter m = ln(VP).  Trust region radius Δtr adapts via
-# ρ = actual_reduction / predicted_reduction (Nocedal & Wright §4.1).
-# Gradient is cached across rejected steps.  MAX_ITER counts accepted steps.
-# v(y) layered prior enforced by x-averaging in objective() and projection.
+# ── L-BFGS + Trust Region optimisation ───────────────────────────────────
 
 delta_tr   = 0.3
 delta_max  = 1
@@ -816,12 +764,13 @@ MAX_ITER   = 20
 MAX_TRIES  = 30
 M          = 10
 
+
 def _mesh_vp_roi(vp_roi_vals):
-    """Return ROI VP after full-mesh x-averaging applied in objective()."""
     _vp_n = _vp_bg_nodal.copy()
     _vp_n[roi_mask] = vp_roi_vals
     _vp_n = _average_vp_in_x(_vp_n)
     return np.clip(_vp_n[roi_mask], VP_MIN, VP_MAX)
+
 
 m = np.full(roi_mask.sum(), np.log(VP))
 misfit_history = []
@@ -903,6 +852,20 @@ while k < MAX_ITER and tries < MAX_TRIES:
         model_history.append(_mesh_vp_roi(_vp_acc))
         status = "accepted"
         k += 1
+
+        plot_fwi_diagnostics(
+            it=k,
+            phi_obs=phi_obs,
+            phi_syn=_diag_cache['phi_syn'],
+            f_adj=_diag_cache['f_adj'],
+            phi_t=_diag_cache['phi_t'],
+            phi_t_adj=_diag_cache['phi_t_adj'],
+            K_VP=_diag_cache['K_VP'],
+            K_roi=_diag_cache['K_roi'],
+            x=_x, y=_y, x_roi=_x_roi, y_roi=_y_roi,
+            x0_roi=x0_roi, x1_roi=x1_roi, y0_roi=y0_roi, y1_roi=y1_roi,
+            s_loc=s_loc, r_loc=r_loc, a_ell=_a_fwi,
+        )
     else:
         cached_misfit = misfit
         cached_grad   = grad
@@ -921,7 +884,7 @@ while k < MAX_ITER and tries < MAX_TRIES:
     print(f"Iteration {k}: n_events={n_events}  VP_mean={vp_mean:.1f} m/s  "
           f"chi={misfit:.6e}  ||g||={grad_norm:.3e}")
     print(f"  pred={predicted_red:.3e}  ared={actual_red:.3e}  "
-          f"||Δm||_∞={step_norm:.4f}  Δtr={delta_tr:.4f}  ({status})")
+          f"||dm||_inf={step_norm:.4f}  delta_tr={delta_tr:.4f}  ({status})")
 
 model_history = np.array(model_history)
 
@@ -936,3 +899,74 @@ np.save(_data_dir / f"misfit_history_freq_{f_c}.npy", np.array(misfit_history))
 np.save(_data_dir / f"model_history_freq_{f_c}.npy",  model_history)
 print(f"Saved misfit_history ({len(misfit_history)} entries) and "
       f"model_history {model_history.shape} to {_data_dir}")
+
+# # ── Visualise recovered model ─────────────────────────────────────────────
+
+# import re
+
+# alpha_ls    = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
+# VP_TRUE_ROI = 1.5 * VP
+
+# model_files = sorted(_data_dir.glob("model_history_freq_*.npy"))
+# all_pairs = []
+# for f in model_files:
+#     m_match = re.search(r"model_history_freq_(.+)\.npy", f.name)
+#     if m_match:
+#         fc = float(m_match.group(1))
+#         all_pairs.append(((fc * THICKNESS) / VP, fc))
+
+# pairs = [(a, fc) for a, fc in sorted(all_pairs)
+#          if any(abs(a - a_target) < 0.01 for a_target in alpha_ls)]
+# alphas_vis, frequencies = zip(*pairs) if pairs else ([], [])
+# alphas_vis, frequencies = list(alphas_vis), list(frequencies)
+
+# print(f"Filtered to {len(frequencies)} runs matching alpha_ls={alpha_ls}:")
+# print(f"  alpha: {[f'{a:.3f}' for a in alphas_vis]}\n")
+
+# mse_final    = []
+# mse_initial  = []
+# rmse_final   = []
+# rmse_initial = []
+# abs_error    = []
+
+# for fc, alpha_val in zip(frequencies, alphas_vis):
+#     mh  = np.load(_data_dir / f"model_history_freq_{fc}.npy")
+#     mis = np.load(_data_dir / f"misfit_history_freq_{fc}.npy")
+
+#     vp_init  = mh[0]
+#     vp_final = mh[-1]
+
+#     mse_i = np.mean((vp_init  - VP_TRUE_ROI) ** 2)
+#     mse_f = np.mean((vp_final - VP_TRUE_ROI) ** 2)
+#     mse_initial.append(mse_i)
+#     mse_final.append(mse_f)
+#     rmse_initial.append(np.sqrt(mse_i))
+#     rmse_final.append(np.sqrt(mse_f))
+#     abs_error.append(np.max(np.abs(vp_final - VP_TRUE_ROI)))
+#     print(f"alpha={alpha_val:.3f}  f_c={fc:.1f} Hz | "
+#           f"model_history: {mh.shape} | "
+#           f"VP_final mean={vp_final.mean():.1f}  range=[{vp_final.min():.0f}, {vp_final.max():.0f}] | "
+#           f"MSE={mse_f:.4e}  RMSE={rmse_final[-1]:.4e}")
+
+# alphas_arr = np.array(alphas_vis)
+
+# fig, axes = plt.subplots(1, 2, figsize=(14, 5), dpi=100)
+
+# axes[0].plot(alphas_arr, abs_error, 'o-', color='steelblue', lw=2, ms=6, label='Final model')
+# axes[0].set_xlabel(r'$\alpha$ (layer thickness to wavelength ratio)')
+# axes[0].set_ylabel(r'Maximum Absolute Error  $[\mathrm{m}/\mathrm{s}]$')
+# axes[0].set_title(r'Maximum Absolute Error  vs $\alpha$')
+# axes[0].legend()
+# axes[0].grid(alpha=0.35)
+# axes[0].set_yscale('log')
+
+# axes[1].plot(alphas_arr, rmse_final, 'o-', color='gray', lw=2, ms=6, label='Final model')
+# axes[1].set_xlabel(r'$\alpha$ (layer thickness to wavelength ratio)')
+# axes[1].set_ylabel(r'RMSE [m/s]')
+# axes[1].set_title(r'RMSE  vs $\alpha$')
+# axes[1].legend()
+# axes[1].grid(alpha=0.35)
+
+# plt.tight_layout()
+# plt.savefig(IMAGE_DIR / 'fwi_recovery_vs_alpha.png')
+# plt.show()
