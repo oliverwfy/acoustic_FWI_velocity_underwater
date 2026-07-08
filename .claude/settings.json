@@ -12,7 +12,19 @@
       "Bash(squeue --me --start)",
       "Bash(sinfo -o \"%P %a %N %G %C\" --noheader)",
       "Bash(sinfo -o \"%N %G %C %t\" --noheader)",
-      "Read(//home/b6as/oliverwfy.b6as/**)"
+      "Read(//home/b6as/oliverwfy.b6as/**)",
+      "Bash(sacct --me --starttime=today --format=JobID,JobName,Partition,State,Elapsed,NodeList,ExitCode)",
+      "Bash(ssh -o ConnectTimeout=5 -o BatchMode=yes nid010410 \"hostname; pgrep -af jupyter | head -20; ps aux | grep -i jupyter | grep -v grep\")",
+      "Bash(sstat -j 5560352 --format=JobID,MaxRSS,MaxVMSize,AveCPU,NTasks)",
+      "Bash(srun --jobid=5560352 --overlap --pty ps aux)",
+      "Bash(srun --jobid=5560352 --overlap --pty ps -u oliverwfy.b6as -o pid,ppid,%mem,stat,start,etime,command)",
+      "Bash(srun --jobid=5560352 --overlap --pty ps -u oliverwfy.b6as -o pid,ppid,command --no-headers -ww)",
+      "Bash(srun --jobid=5560352 --overlap --pty ps -o pid,stat,%cpu,%mem,etime,wchan:32,command -p 72551,122143)",
+      "Bash(srun --jobid=5560352 --overlap --pty cat /proc/122143/status)",
+      "Bash(srun --jobid=5560352 --overlap --pty cat /proc/72551/status)",
+      "Bash(timeout 15 srun --jobid=5560352 --overlap --pty bash -c ' *)",
+      "Bash(srun --jobid=5560352 --overlap --pty ps -o pid,stat,%cpu,etime,wchan:32,command -p 72551,122143)",
+      "Bash(scancel --me)"
     ],
     "additionalDirectories": [
       "/tmp",
