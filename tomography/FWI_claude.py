@@ -37,7 +37,7 @@ RHO   = 1025.0
 THICKNESS = 0.2
 vc    = 1400
 
-alpha = 0.8
+alpha = 0.6
 f_c   = alpha * 75e2
 CENTRAL_FREQUENCY = 4 * 75e2
 
@@ -476,6 +476,7 @@ def plot_fwi_diagnostics(it, phi_obs, phi_syn, f_adj, phi_t, phi_t_adj,
     if save:
         plt.savefig(IMAGE_DIR / f'iter_{it:03d}_adjoint_source_alpha_{alpha}_c_{vc}.png')
     plt.show()
+    plt.close(fig1)
 
     # Figure 2: wavefield snapshots
     fwd = phi_t.values.squeeze()
@@ -520,6 +521,7 @@ def plot_fwi_diagnostics(it, phi_obs, phi_syn, f_adj, phi_t, phi_t_adj,
     if save:
         plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_intermediate_alpha_{alpha}_c_{vc}.png')
     plt.show()
+    plt.close(fig2)
 
     # Figure 3: full sensitivity kernel
     fig3, ax_K = plt.subplots(figsize=(8, 6), dpi=100)
@@ -535,11 +537,15 @@ def plot_fwi_diagnostics(it, phi_obs, phi_syn, f_adj, phi_t, phi_t_adj,
     if save:
         plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_full_alpha_{alpha}_c_{vc}.png')
     plt.show()
+    plt.close(fig3)
 
-    # Figure 4: ROI sensitivity kernel with ellipse mask
-    _d1 = np.sqrt((x_roi - s_loc[0])**2 + (y_roi - s_loc[1])**2)
-    _d2 = np.sqrt((x_roi - r_loc[0][0])**2 + (y_roi - r_loc[0][1])**2)
-    K_roi_masked = np.where((_d1 + _d2) <= 2 * a_ell, K_roi, 0.0)
+    # Figure 4: ROI sensitivity kernel with ellipse mask (union over all source-receiver pairs)
+    _ellipse_mask_roi = np.zeros_like(x_roi, dtype=bool)
+    for _r in r_loc:
+        _d1 = np.sqrt((x_roi - s_loc[0])**2 + (y_roi - s_loc[1])**2)
+        _d2 = np.sqrt((x_roi - _r[0])**2 + (y_roi - _r[1])**2)
+        _ellipse_mask_roi |= (_d1 + _d2) <= 2 * a_ell
+    K_roi_masked = np.where(_ellipse_mask_roi, K_roi, 0.0)
     _K_roi_max = np.max(np.abs(K_roi_masked))
     fig4, ax_2d = plt.subplots(figsize=(8, 6), dpi=100)
     tp = ax_2d.tripcolor(x_roi, y_roi, K_roi_masked,
@@ -561,6 +567,7 @@ def plot_fwi_diagnostics(it, phi_obs, phi_syn, f_adj, phi_t, phi_t_adj,
     if save:
         plt.savefig(IMAGE_DIR / f'iter_{it:03d}_sensitivity_kernel_roi_alpha_{alpha}_c_{vc}.png')
     plt.show()
+    plt.close(fig4)
 
 
 plot_fwi_diagnostics(

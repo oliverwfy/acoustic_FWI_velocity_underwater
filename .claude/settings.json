@@ -24,7 +24,18 @@
       "Bash(srun --jobid=5560352 --overlap --pty cat /proc/72551/status)",
       "Bash(timeout 15 srun --jobid=5560352 --overlap --pty bash -c ' *)",
       "Bash(srun --jobid=5560352 --overlap --pty ps -o pid,stat,%cpu,etime,wchan:32,command -p 72551,122143)",
-      "Bash(scancel --me)"
+      "Bash(scancel --me)",
+      "Bash(timeout 15 find ~/.ipython -maxdepth 4 -iname \"*.py\")",
+      "Bash(timeout 15 find ~/.jupyter -maxdepth 3)",
+      "Bash(timeout 15 find ~/.local/share/jupyter/kernels -maxdepth 3)",
+      "Bash(jupyter kernelspec *)",
+      "Bash(~/miniforge3/envs/salvus/bin/jupyter kernelspec *)",
+      "Bash(srun --jobid=5691686 --overlap --pty bash -c \"ps aux | grep -i jupyter | grep -v grep; echo '---port 8889---'; ss -tlnp 2>/dev/null | grep 8889 || netstat -tlnp 2>/dev/null | grep 8889; nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv 2>&1\")",
+      "Bash(/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/python -c \"import ipykernel; print\\(ipykernel.__file__\\)\")",
+      "Bash(/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/python -c \"import salvus; print\\(salvus.__file__\\)\")",
+      "Bash(/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/jupyter kernelspec *)",
+      "Bash(/home/b6as/oliverwfy.b6as/miniforge3/envs/salvus/bin/python -c \"from jupyter_core.paths import jupyter_data_dir, jupyter_path; print\\(jupyter_data_dir\\(\\)\\); print\\(jupyter_path\\(\\)\\)\")"
     ],
     "additionalDirectories": [
       "/tmp",
